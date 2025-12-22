@@ -19,11 +19,15 @@ export function decodeStateFromUrl(): AvailabilityState | null {
   }
 }
 
-export function encodeStateToUrl(state: AvailabilityState) {
+export function buildUrlWithState(state: AvailabilityState): string {
   const params = new URLSearchParams(window.location.search);
   const encoded = encodeURIComponent(JSON.stringify(state));
   params.set(PARAM_KEY, encoded);
-  const newUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
+  return `${window.location.origin}${window.location.pathname}?${params.toString()}${window.location.hash}`;
+}
+
+export function encodeStateToUrl(state: AvailabilityState) {
+  const newUrl = buildUrlWithState(state);
   window.history.replaceState({}, "", newUrl);
 }
 

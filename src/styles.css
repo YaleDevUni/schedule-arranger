@@ -203,6 +203,27 @@ button {
   color: #8186a0;
 }
 
+.share-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.copy-button {
+  padding: 0.45rem 0.8rem;
+  border: none;
+  border-radius: 0.6rem;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: white;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.copied-feedback {
+  font-size: 0.8rem;
+  color: #4f46e5;
+}
+
 .color-legend {
   margin-top: 0.6rem;
   font-size: 0.75rem;

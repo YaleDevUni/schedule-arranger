@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { AvailabilityState } from "./types";
 import {
   buildDefaultState,
+  buildUrlWithState,
   decodeStateFromUrl,
   encodeStateToUrl,
 } from "./urlState";
@@ -37,6 +38,7 @@ export function App() {
   const [viewMode, setViewMode] = useState<"person" | "overall">("person");
   const [slotEditorDay, setSlotEditorDay] = useState<Date | null>(null);
   const [overallDetailDay, setOverallDetailDay] = useState<Date | null>(null);
+  const [showCopied, setShowCopied] = useState(false);
 
   useEffect(() => {
     encodeStateToUrl(state);
@@ -61,7 +63,17 @@ export function App() {
     return `${y}-${m}`;
   }, [state.base_month]);
 
-  const shareUrl = useMemo(() => window.location.href, [state]);
+  const shareUrl = useMemo(() => buildUrlWithState(state), [state]);
+
+  const handleCopy = () => {
+    const urlToCopy = buildUrlWithState(state);
+    navigator.clipboard.writeText(urlToCopy).then(() => {
+      setShowCopied(true);
+      setTimeout(() => {
+        setShowCopied(false);
+      }, 2000);
+    });
+  };
 
   const handleAddPerson = () => {
     const name = newPersonName.trim();
@@ -223,12 +235,18 @@ export function App() {
 
           <div className="share-box">
             <h3>Share this schedule</h3>
-            <input
-              readOnly
-              className="share-input"
-              value={shareUrl}
-              onFocus={(e) => e.target.select()}
-            />
+            <div className="share-row">
+              <input
+                readOnly
+                className="share-input"
+                value={shareUrl}
+                onFocus={(e) => e.target.select()}
+              />
+              <button type="button" className="copy-button" onClick={handleCopy}>
+                Copy
+              </button>
+              {showCopied && <span className="copied-feedback">Copied!</span>}
+            </div>
             <p className="share-hint">Copy this URL and send it to others.</p>
           </div>
           <p className="overall-guide">
