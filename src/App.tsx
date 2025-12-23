@@ -39,7 +39,7 @@ export function App() {
   const [slotEditorDay, setSlotEditorDay] = useState<Date | null>(null);
   const [overallDetailDay, setOverallDetailDay] = useState<Date | null>(null);
   const [showCopied, setShowCopied] = useState(false);
-
+  const [showCopiedDefault, setShowCopiedDefault] = useState(false);
   useEffect(() => {
     encodeStateToUrl(state);
   }, [state]);
@@ -75,6 +75,17 @@ export function App() {
       setShowCopied(true);
       setTimeout(() => {
         setShowCopied(false);
+      }, 2000);
+    });
+  };
+
+  const handleCopyDefault = () => {
+    const defaultState = buildDefaultState();
+    const urlToCopy = buildUrlWithState(defaultState);
+    navigator.clipboard.writeText(urlToCopy).then(() => {
+      setShowCopiedDefault(true);
+      setTimeout(() => {
+        setShowCopiedDefault(false);
       }, 2000);
     });
   };
@@ -246,12 +257,27 @@ export function App() {
                 value={shareUrl}
                 onFocus={(e) => e.target.select()}
               />
-              <button type="button" className="copy-button" onClick={handleCopy}>
+              <button
+                type="button"
+                className="copy-button"
+                onClick={handleCopy}
+              >
                 Copy
               </button>
               {showCopied && <span className="copied-feedback">Copied!</span>}
             </div>
             <p className="share-hint">Copy this URL and send it to others.</p>
+            <br />
+            <button
+              type="button"
+              className="copy-button"
+              onClick={handleCopyDefault}
+            >
+              초기화 공유 링크
+            </button>
+            {showCopiedDefault && (
+              <span className="copied-feedback">Copied!</span>
+            )}
           </div>
           <p className="overall-guide">
             전체 보기에서 각 날짜 칸의 점 줄은 위에서부터 아침 · 점심 · 저녁
@@ -378,7 +404,9 @@ export function App() {
                       return `${personName}: ${activeLabels.join(", ")}`;
                     })()}
                   >
-                    <span className="calendar-cell-day">{day.getUTCDate()}</span>
+                    <span className="calendar-cell-day">
+                      {day.getUTCDate()}
+                    </span>
                     <div className="person-slot-dots">
                       {(["morning", "lunch", "evening"] as DaySlot[]).map(
                         (slot) => {
@@ -573,7 +601,8 @@ export function App() {
             <div className="slot-editor">
               <div className="slot-editor-header">
                 <span className="slot-editor-title">
-                  {slotEditorDay.getUTCMonth() + 1}월 {slotEditorDay.getUTCDate()}일 ·{" "}
+                  {slotEditorDay.getUTCMonth() + 1}월{" "}
+                  {slotEditorDay.getUTCDate()}일 ·{" "}
                   {state.people[activePersonIndex]?.name}
                 </span>
                 <button
