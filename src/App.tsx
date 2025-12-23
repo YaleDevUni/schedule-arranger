@@ -49,17 +49,21 @@ export function App() {
     [state.base_month]
   );
 
-  const firstDayOfWeek = days[0]?.getDay() ?? 0;
+  const firstDayOfWeek = days[0]?.getUTCDay() ?? 0;
 
   const monthLabel = useMemo(() => {
     const base = new Date(state.base_month);
-    return base.toLocaleString(undefined, { month: "long", year: "numeric" });
+    return base.toLocaleString(undefined, {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    });
   }, [state.base_month]);
 
   const monthInputValue = useMemo(() => {
     const base = new Date(state.base_month);
-    const y = base.getFullYear();
-    const m = `${base.getMonth() + 1}`.padStart(2, "0");
+    const y = base.getUTCFullYear();
+    const m = `${base.getUTCMonth() + 1}`.padStart(2, "0");
     return `${y}-${m}`;
   }, [state.base_month]);
 
@@ -374,7 +378,7 @@ export function App() {
                       return `${personName}: ${activeLabels.join(", ")}`;
                     })()}
                   >
-                    <span className="calendar-cell-day">{day.getDate()}</span>
+                    <span className="calendar-cell-day">{day.getUTCDate()}</span>
                     <div className="person-slot-dots">
                       {(["morning", "lunch", "evening"] as DaySlot[]).map(
                         (slot) => {
@@ -462,7 +466,7 @@ export function App() {
                     return parts.join(" / ");
                   })()}
                 >
-                  <span className="calendar-cell-day">{day.getDate()}</span>
+                  <span className="calendar-cell-day">{day.getUTCDate()}</span>
                   <div className="calendar-cell-slots">
                     {slots.map((slot) => {
                       const slotKey = `${dayKey}|${slot}`;
@@ -508,8 +512,8 @@ export function App() {
             <div className="overall-detail">
               <div className="overall-detail-header">
                 <span className="overall-detail-title">
-                  {overallDetailDay.getMonth() + 1}월{" "}
-                  {overallDetailDay.getDate()}일
+                  {overallDetailDay.getUTCMonth() + 1}월{" "}
+                  {overallDetailDay.getUTCDate()}일
                 </span>
                 <button
                   type="button"
@@ -569,7 +573,7 @@ export function App() {
             <div className="slot-editor">
               <div className="slot-editor-header">
                 <span className="slot-editor-title">
-                  {slotEditorDay.getMonth() + 1}월 {slotEditorDay.getDate()}일 ·{" "}
+                  {slotEditorDay.getUTCMonth() + 1}월 {slotEditorDay.getUTCDate()}일 ·{" "}
                   {state.people[activePersonIndex]?.name}
                 </span>
                 <button

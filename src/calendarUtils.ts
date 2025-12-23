@@ -2,15 +2,15 @@ import type { AvailabilityState } from "./types";
 
 export function getMonthDays(baseMonthIso: string): Date[] {
   const base = new Date(baseMonthIso);
-  const year = base.getFullYear();
-  const month = base.getMonth();
-  const first = new Date(year, month, 1);
+  const year = base.getUTCFullYear();
+  const month = base.getUTCMonth();
+  const first = new Date(Date.UTC(year, month, 1));
   const days: Date[] = [];
 
   let current = first;
-  while (current.getMonth() === month) {
+  while (current.getUTCMonth() === month) {
     days.push(new Date(current));
-    current = new Date(year, month, current.getDate() + 1);
+    current = new Date(Date.UTC(year, month, current.getUTCDate() + 1));
   }
 
   return days;
@@ -18,9 +18,9 @@ export function getMonthDays(baseMonthIso: string): Date[] {
 
 export function formatDateKey(d: Date): string {
   // Use just the date portion in ISO format (YYYY-MM-DD)
-  const year = d.getFullYear();
-  const month = `${d.getMonth() + 1}`.padStart(2, "0");
-  const day = `${d.getDate()}`.padStart(2, "0");
+  const year = d.getUTCFullYear();
+  const month = `${d.getUTCMonth() + 1}`.padStart(2, "0");
+  const day = `${d.getUTCDate()}`.padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 

@@ -1,3 +1,7 @@
+import {
+  compressToEncodedURIComponent,
+  decompressFromEncodedURIComponent
+} from "lz-string";
 import type { AvailabilityState, PersonAvailability } from "./types";
 
 const PARAM_KEY = "state";
@@ -28,7 +32,7 @@ function compactState(state: AvailabilityState): CompactState {
       n: person.name,
       a: person.available_time.map((time) => {
         const [day, slot] = time.split("|");
-        const dayOfMonth = new Date(day).getDate();
+        const dayOfMonth = new Date(day).getUTCDate();
         return [dayOfMonth, SLOT_MAP[slot]];
       })
     }))
@@ -37,8 +41,8 @@ function compactState(state: AvailabilityState): CompactState {
 
 function expandState(compact: CompactState): AvailabilityState {
   const baseDate = new Date(compact.m);
-  const year = baseDate.getFullYear();
-  const month = baseDate.getMonth();
+  const year = baseDate.getUTCFullYear();
+  const month = baseDate.getUTCMonth();
 
   return {
     base_month: compact.m,
@@ -46,7 +50,7 @@ function expandState(compact: CompactState): AvailabilityState {
     people: compact.p.map((person) => ({
       name: person.n,
       available_time: person.a.map(([dayOfMonth, slot]) => {
-        const date = new Date(year, month, dayOfMonth);
+        const date = new Date(Date.UTC(year, month, dayOfMonth));
         return `${date.toISOString().split("T")[0]}|${SLOT_MAP_REVERSE[slot]}`;
       })
     }))
@@ -60,27 +64,42 @@ export function decodeStateFromUrl(): AvailabilityState | null {
     return null;
   }
 
+  // Attempt to decompress with lz-string first.
+  // It should not throw, but returns null on failure.
+  try {
+    const decompressed = decompressFromEncodedURIComponent(raw);
+    if (decompressed) {
+      const parsed = JSON.parse(decompressed);
+      if (parsed && typeof parsed === "object") {
+        return expandState(parsed as CompactState);
+      }
+    }
+  } catch (e) {
+    // This catch block is for JSON.parse or expandState errors with lz-string data
+    console.error("Failed to decode lz-string state:", e);
+  }
+
+  // If lz-string fails, try legacy formats.
   try {
     const decoded = decodeURIComponent(raw);
     const parsed = JSON.parse(decoded);
     if (!parsed || typeof parsed !== "object") return null;
 
-    // Check for new compact format
     if ("p" in parsed && "m" in parsed) {
       return expandState(parsed as CompactState);
     }
-
-    // Assume old format
     return parsed as AvailabilityState;
-  } catch {
-    return null;
+  } catch (e) {
+    console.error("Failed to decode legacy state:", e);
   }
+
+  return null;
 }
 
 export function buildUrlWithState(state: AvailabilityState): string {
   const params = new URLSearchParams(window.location.search);
   const compact = compactState(state);
-  const encoded = encodeURIComponent(JSON.stringify(compact));
+  const encoded = compressToEncodedURIComponent(JSON.stringify(compact));
   params.set(PARAM_KEY, encoded);
   return `${window.location.origin}${window.location.pathname}?${params.toString()}${window.location.hash}`;
 }
