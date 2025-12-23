@@ -137,7 +137,7 @@ export function App() {
     const year = Number(yearStr);
     const month = Number(monthStr);
     if (!Number.isFinite(year) || !Number.isFinite(month)) return;
-    const firstOfMonth = new Date(year, month - 1, 1);
+    const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
     setState((prev) => ({
       ...prev,
       base_month: firstOfMonth.toISOString(),
@@ -146,7 +146,9 @@ export function App() {
 
   const shiftMonth = (delta: number) => {
     const base = new Date(state.base_month);
-    const next = new Date(base.getFullYear(), base.getMonth() + delta, 1);
+    const next = new Date(
+      Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + delta, 1)
+    );
     setState((prev) => ({
       ...prev,
       base_month: next.toISOString(),
@@ -280,8 +282,7 @@ export function App() {
             )}
           </div>
           <p className="overall-guide">
-            전체 보기에서 각 날짜 칸의 점 줄은 위에서부터 아침 · 점심 · 저녁
-            순서입니다.
+            전체 보기에서 각 날짜 칸의 점 줄은 위에서부터 오전 · 오후 순서입니다.
           </p>
         </section>
 
@@ -387,9 +388,8 @@ export function App() {
                     title={(() => {
                       const slotsForTooltip: { key: DaySlot; label: string }[] =
                         [
-                          { key: "morning", label: "아침" },
-                          { key: "lunch", label: "점심" },
-                          { key: "evening", label: "저녁" },
+                          { key: "am", label: "오전" },
+                          { key: "pm", label: "오후" },
                         ];
                       const activeLabels = slotsForTooltip
                         .filter(({ key }) =>
@@ -408,33 +408,31 @@ export function App() {
                       {day.getUTCDate()}
                     </span>
                     <div className="person-slot-dots">
-                      {(["morning", "lunch", "evening"] as DaySlot[]).map(
-                        (slot) => {
-                          const active = hasDaySlot(
-                            state,
-                            activePersonIndex,
-                            day,
-                            slot
-                          );
-                          return (
-                            <span
-                              key={slot}
-                              className={
-                                active
-                                  ? "person-slot-dot person-slot-dot--active"
-                                  : "person-slot-dot"
-                              }
-                            />
-                          );
-                        }
-                      )}
+                      {(["am", "pm"] as DaySlot[]).map((slot) => {
+                        const active = hasDaySlot(
+                          state,
+                          activePersonIndex,
+                          day,
+                          slot
+                        );
+                        return (
+                          <span
+                            key={slot}
+                            className={
+                              active
+                                ? "person-slot-dot person-slot-dot--active"
+                                : "person-slot-dot"
+                            }
+                          />
+                        );
+                      })}
                     </div>
                   </button>
                 );
               }
 
               const dayKey = formatDateKey(day);
-              const slots: DaySlot[] = ["morning", "lunch", "evening"];
+              const slots: DaySlot[] = ["am", "pm"];
               const totalPeople = state.people.length || 1;
               const hasCommon = slots.some((slot) => {
                 const slotKey = `${dayKey}|${slot}`;
@@ -463,9 +461,8 @@ export function App() {
                   }}
                   title={(() => {
                     const slotsForTooltip: { key: DaySlot; label: string }[] = [
-                      { key: "morning", label: "아침" },
-                      { key: "lunch", label: "점심" },
-                      { key: "evening", label: "저녁" },
+                      { key: "am", label: "오전" },
+                      { key: "pm", label: "오후" },
                     ];
                     const keyForDay = formatDateKey(day);
                     const allLabels: string[] = [];
@@ -552,15 +549,10 @@ export function App() {
                 </button>
               </div>
               <div className="overall-detail-body">
-                {(["morning", "lunch", "evening"] as DaySlot[]).map((slot) => {
+                {(["am", "pm"] as DaySlot[]).map((slot) => {
                   const dayKey = formatDateKey(overallDetailDay);
                   const slotKey = `${dayKey}|${slot}`;
-                  const label =
-                    slot === "morning"
-                      ? "아침"
-                      : slot === "lunch"
-                      ? "점심"
-                      : "저녁";
+                  const label = slot === "am" ? "오전" : "오후";
                   const people = state.people
                     .map((p, index) => ({ person: p, index }))
                     .filter(({ person }) =>
@@ -614,19 +606,14 @@ export function App() {
                 </button>
               </div>
               <div className="slot-editor-buttons">
-                {(["morning", "lunch", "evening"] as DaySlot[]).map((slot) => {
+                {(["am", "pm"] as DaySlot[]).map((slot) => {
                   const active = hasDaySlot(
                     state,
                     activePersonIndex,
                     slotEditorDay,
                     slot
                   );
-                  const label =
-                    slot === "morning"
-                      ? "아침"
-                      : slot === "lunch"
-                      ? "점심"
-                      : "저녁";
+                  const label = slot === "am" ? "오전" : "오후";
                   return (
                     <button
                       key={slot}
@@ -658,7 +645,7 @@ export function App() {
                     setState((prev) => {
                       if (!slotEditorDay) return prev;
                       const dayKey = formatDateKey(slotEditorDay);
-                      const slots: DaySlot[] = ["morning", "lunch", "evening"];
+                      const slots: DaySlot[] = ["am", "pm"];
                       const person = prev.people[activePersonIndex];
                       if (!person) return prev;
 
@@ -670,13 +657,13 @@ export function App() {
                       const updatedPerson = { ...person };
 
                       if (allSelected) {
-                        // All three are on → clear all three for that day
+                        // All are on → clear for that day
                         updatedPerson.available_time =
                           person.available_time.filter(
                             (entry) => !entry.startsWith(`${dayKey}|`)
                           );
                       } else {
-                        // Not all selected → ensure all three are set to true
+                        // Not all selected → ensure all are set to true
                         const neededKeys = slots.map(
                           (slot) => `${dayKey}|${slot}`
                         );

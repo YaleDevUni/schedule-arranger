@@ -7,9 +7,8 @@ import type { AvailabilityState, PersonAvailability } from "./types";
 const PARAM_KEY = "state";
 
 const SLOT_MAP: Record<string, number> = {
-  morning: 0,
-  lunch: 1,
-  evening: 2
+  am: 0,
+  pm: 1,
 };
 const SLOT_MAP_REVERSE = Object.fromEntries(
   Object.entries(SLOT_MAP).map(([k, v]) => [v, k])
@@ -17,29 +16,67 @@ const SLOT_MAP_REVERSE = Object.fromEntries(
 
 type CompactPerson = {
   n: string;
-  a: [number, number][];
+  a: ([number, number] | [string, number])[]; // v1: [day, slot], v2: [yyy-mm-dd, slot]
 };
 
 type CompactState = {
+  v?: 3;
   m: string;
   p: CompactPerson[];
 };
 
 function compactState(state: AvailabilityState): CompactState {
   return {
+    v: 3,
     m: state.base_month,
     p: state.people.map((person) => ({
       n: person.name,
       a: person.available_time.map((time) => {
         const [day, slot] = time.split("|");
-        const dayOfMonth = new Date(day).getUTCDate();
-        return [dayOfMonth, SLOT_MAP[slot]];
-      })
-    }))
+        return [day, SLOT_MAP[slot]];
+      }),
+    })),
   };
 }
 
 function expandState(compact: CompactState): AvailabilityState {
+  // v3 is the latest, with 2 slots
+  if (compact.v === 3) {
+    return {
+      base_month: compact.m,
+      total: compact.p.length,
+      people: compact.p.map((person) => ({
+        name: person.n,
+        available_time: person.a.map(([day, slot]) => {
+          return `${day as string}|${SLOT_MAP_REVERSE[slot as number]}`;
+        }),
+      })),
+    };
+  }
+
+  // Legacy expand for v1, v2, and older formats
+  const LEGACY_SLOT_MAP_REVERSE: Record<number, string> = {
+    0: "am", // morning
+    1: "pm", // lunch
+    2: "pm", // evening
+  };
+
+  // V2 stores absolute dates
+  if (compact.v === 2) {
+    return {
+      base_month: compact.m,
+      total: compact.p.length,
+      people: compact.p.map((person) => ({
+        name: person.n,
+        available_time: person.a.map(([day, slot]) => {
+          const slotValue = slot as number;
+          return `${day as string}|${LEGACY_SLOT_MAP_REVERSE[slotValue]}`;
+        }),
+      })),
+    };
+  }
+
+  // V1 (and older) stored day-of-month, so it was coupled to base_month
   const baseDate = new Date(compact.m);
   const year = baseDate.getUTCFullYear();
   const month = baseDate.getUTCMonth();
@@ -50,10 +87,13 @@ function expandState(compact: CompactState): AvailabilityState {
     people: compact.p.map((person) => ({
       name: person.n,
       available_time: person.a.map(([dayOfMonth, slot]) => {
-        const date = new Date(Date.UTC(year, month, dayOfMonth));
-        return `${date.toISOString().split("T")[0]}|${SLOT_MAP_REVERSE[slot]}`;
-      })
-    }))
+        const slotValue = slot as number;
+        const date = new Date(Date.UTC(year, month, dayOfMonth as number));
+        return `${date.toISOString().split("T")[0]}|${
+          LEGACY_SLOT_MAP_REVERSE[slotValue]
+        }`;
+      }),
+    })),
   };
 }
 

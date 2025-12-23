@@ -34,7 +34,7 @@ export function isDayAvailable(
   return person.available_time.some((entry) => entry.startsWith(`${key}|`));
 }
 
-export type DaySlot = "morning" | "lunch" | "evening";
+export type DaySlot = "am" | "pm";
 
 export function hasDaySlot(
   state: AvailabilityState,
